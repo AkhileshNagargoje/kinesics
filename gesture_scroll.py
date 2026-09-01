@@ -36,6 +36,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 from palm_fist_scroll import FIST_CURL, PALM_EXT
+from phase1_landmark_view import CONNECTIONS, FINGERTIPS
 
 # --------------------------------------------------------------------------
 # global hotkeys
@@ -292,12 +293,15 @@ def draw_overlay(frame, sc, state, dial=None, muter=None):
     h, w = view.shape[:2]
 
     if state is not None:
+        # Full skeleton. The gestures are read from all four fingers, so the
+        # overlay has to show all four - a partial drawing makes a misread
+        # finger invisible, which is the one thing this view exists to catch.
         s = w / frame.shape[1]
-        for a, b in ((0, 1), (1, 2), (2, 3), (3, 4), (0, 5),
-                     (5, 9), (9, 13), (13, 17), (0, 17)):
-            cv2.line(view, tuple((state.pts[a] * s).astype(int)),
-                     tuple((state.pts[b] * s).astype(int)), (90, 200, 120), 2, cv2.LINE_AA)
-        cv2.circle(view, tuple((state.pts[4] * s).astype(int)), 6, (60, 90, 255), -1, cv2.LINE_AA)
+        px = (state.pts * s).astype(int)
+        for a, b in CONNECTIONS:
+            cv2.line(view, tuple(px[a]), tuple(px[b]), (90, 200, 120), 2, cv2.LINE_AA)
+        for i in FINGERTIPS:
+            cv2.circle(view, tuple(px[i]), 4, (60, 90, 255), -1, cv2.LINE_AA)
 
     if muter is not None and muter.progress > 0:
         label = f"MUTE... {muter.progress * 100:3.0f}%"
