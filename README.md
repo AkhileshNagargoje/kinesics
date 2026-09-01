@@ -60,7 +60,7 @@ and no frames are read.
 | `base_rate` / `max_rate` / `ramp` | scroll speed and acceleration |
 | `volume` / `volume_per_degree` | volume dial, and its sensitivity |
 | `mute` | horns mute toggle |
-| `tap_to_page` | a brief palm/fist pages instead of scrolling |
+| `tap_to_page` | a brief palm/fist pages instead of scrolling (off by default - see limitations) |
 | `hotkey` | e.g. `ctrl+alt+G`, `ctrl+shift+F9`, `alt+HOME` |
 
 ## How it works
@@ -142,5 +142,11 @@ requiring you to reach each position on command.
 
 - Windows only (Core Audio and `SendInput`).
 - `target: foreground` may not work in Chrome or Electron apps; use `cursor`.
-- False-positive rate in ordinary use has not been measured. Every gesture
-  logged so far was deliberate.
+- `tap_to_page` is off by default. In a 5.7 minute session all seven taps were
+  false, each one a hand sweeping back through a pose moments after a scroll
+  ended. It needs the tracking instability below fixed before it is usable.
+- Tracking stability varies a lot with lighting. A good session holds the hand
+  continuously; a poor one logged 206 hand in/out transitions in 5.7 minutes
+  (36 per minute), and every re-acquisition is another chance for a pose to
+  register by accident. False triggers across all gestures track this number
+  more than they track any threshold.

@@ -9,5 +9,5 @@
   "volume_per_degree": 0.006,
   "hotkey": "ctrl+alt+G",
   "mute": true,
-  "tap_to_page": true
+  "tap_to_page": false
 }
