@@ -17,6 +17,7 @@ Gestures:
     open palm                                     scroll up
     fist                                          scroll down
     two fingers up, rotate your hand like a dial  volume
+    one finger up, held                           toggle mute
 
 Scrolling goes to the window under the mouse cursor, or to the focused window
 if "target" is set to "foreground" in settings.json.
@@ -279,7 +280,7 @@ def make_non_activating(title):
     return True
 
 
-def draw_overlay(frame, sc, state, dial=None):
+def draw_overlay(frame, sc, state, dial=None, muter=None):
     """Small live view: what the camera sees, what the rule thinks, what it did.
 
     Every stage is shown separately, because a failure at any one of them looks
@@ -298,7 +299,12 @@ def draw_overlay(frame, sc, state, dial=None):
                      tuple((state.pts[b] * s).astype(int)), (90, 200, 120), 2, cv2.LINE_AA)
         cv2.circle(view, tuple((state.pts[4] * s).astype(int)), 6, (60, 90, 255), -1, cv2.LINE_AA)
 
-    if dial is not None and dial.engaged:
+    if muter is not None and muter.progress > 0:
+        label = f"MUTE... {muter.progress * 100:3.0f}%"
+        color = (120, 160, 255)
+    elif muter is not None and muter.muted:
+        label, color = "MUTED", (120, 160, 255)
+    elif dial is not None and dial.engaged:
         label = f"VOLUME {(dial.level or 0) * 100:3.0f}%"
         color = (240, 190, 90)
     elif sc.direction > 0:
@@ -347,6 +353,7 @@ class Engine:
         self.saw_hand = False
         self.hold_start_units = 0.0
         self.dial = None
+        self.muter = None
 
     def toggle(self):
         with self.lock:
@@ -407,6 +414,12 @@ class Engine:
             dial = VolumeDial()
             dial.per_degree = float(self.settings.get('volume_per_degree', 0.006))
             self.log('volume dial on: two fingers up, rotate to change volume')
+
+        muter = None
+        if self.settings.get('mute', True):
+            from volume import MuteToggle
+            muter = MuteToggle()
+            self.log('mute on: hold one finger up to toggle')
         last_stamp, idx = 0.0, 0
 
         # A small always-on-top preview. Without it the daemon is a black box:
@@ -458,6 +471,14 @@ class Engine:
                                  f'(rotated {dial.rotated:+.0f} deg)')
                     self.dial = dial
 
+                if muter is not None:
+                    toggled = muter.update(st)
+                    if toggled is not None:
+                        self.log(f"MUTE {'on' if toggled else 'off'}")
+                    if muter.held:
+                        volume_until = time.perf_counter() + 0.4
+                    self.muter = muter
+
                 # Hide the hand from the scroller while volume owns it.
                 st_for_scroll = None if time.perf_counter() < volume_until else st
 
@@ -488,7 +509,7 @@ class Engine:
                           "down" if sc.direction < 0 else "armed")
 
                 if overlay:
-                    cv2.imshow(OVERLAY, draw_overlay(frame, sc, st, dial))
+                    cv2.imshow(OVERLAY, draw_overlay(frame, sc, st, dial, muter))
                     if (cv2.waitKey(1) & 0xFF) in (ord("q"), 27):
                         self.armed = False
         finally:
@@ -545,6 +566,7 @@ DEFAULTS = {
     "overlay": True,
     "target": "cursor",   # "cursor" or "foreground"
     "volume": True,       # two fingers up, rotate like a dial
+    "mute": True,         # one finger up, held, toggles mute
     "volume_per_degree": 0.006,
 }
 

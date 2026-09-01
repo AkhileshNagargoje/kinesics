@@ -65,6 +65,20 @@ class SystemVolume:
             self.available = False
             return value
 
+    def get_mute(self):
+        try:
+            return bool(self._iface().GetMute())
+        except Exception:
+            self.available = False
+            return False
+
+    def set_mute(self, muted):
+        try:
+            self._iface().SetMute(bool(muted), None)
+        except Exception:
+            self.available = False
+        return bool(muted)
+
 
 def angle_delta(new, old):
     """Shortest signed rotation from old to new, in degrees.
@@ -136,3 +150,74 @@ class VolumeDial:
         self.rotated = 0.0
         self.last_angle = state.angle
         self.level = self.vol.get()
+
+
+# --------------------------------------------------------------------------
+# mute
+# --------------------------------------------------------------------------
+
+# One finger up - the "shush" gesture. It is the only shape left that cannot be
+# confused with the others: palm is all four extended, fist is all four curled,
+# and the volume dial needs exactly two. One sits between them all.
+MUTE_EXT = 0.20         # index clearly extended
+MUTE_CURL = 0.02        # the other three not extended
+MUTE_HOLD_FRAMES = 12   # ~0.4s, long enough that passing through this shape
+                        # on the way between palm and fist cannot trigger it
+MUTE_REARM_FRAMES = 8   # pose must be dropped this long before it can fire again
+
+
+def mute_pose(pts):
+    """True when only the index finger is extended."""
+    m = margins(pts)
+    return (m["index"] > MUTE_EXT
+            and all(m[f] < MUTE_CURL for f in ("middle", "ring", "pinky")))
+
+
+class MuteToggle:
+    """Edge-triggered: one toggle per gesture, however long it is held.
+
+    Mute is a state, not a rate, so unlike scroll and volume this must fire
+    exactly once and then stay quiet until the hand has clearly let go -
+    otherwise a two second hold would flip mute sixty times.
+    """
+
+    def __init__(self, volume=None):
+        self.vol = volume or SystemVolume()
+        self.held = 0
+        self.clear = MUTE_REARM_FRAMES     # start already re-armed
+        self.fired = False
+        self.muted = None
+        self.toggles = 0
+        self.enabled = True
+
+    def update(self, state):
+        """Returns the new mute state if it just toggled, else None."""
+        ok = (state is not None and state.size >= MIN_HAND_SIZE_PX
+              and mute_pose(state.pts))
+
+        if not ok:
+            self.clear += 1
+            self.held = 0
+            if self.clear >= MUTE_REARM_FRAMES:
+                self.fired = False         # re-armed
+            return None
+
+        self.clear = 0
+        self.held += 1
+        if self.fired or self.held < MUTE_HOLD_FRAMES:
+            return None
+
+        self.fired = True
+        self.toggles += 1
+        target = not self.vol.get_mute()
+        if self.enabled:
+            self.vol.set_mute(target)
+        self.muted = target
+        return target
+
+    @property
+    def progress(self):
+        """0..1 toward firing, for the overlay."""
+        if self.fired or not self.held:
+            return 0.0
+        return min(1.0, self.held / MUTE_HOLD_FRAMES)

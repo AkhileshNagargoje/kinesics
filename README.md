@@ -15,6 +15,7 @@ Runs in the background from a tray icon with a small always-on-top preview.
 | Open palm | scroll up |
 | Fist | scroll down |
 | Two fingers up, rotate your hand like a dial | volume |
+| One finger up, held ~0.4 s | toggle mute |
 
 Scroll speed ramps the longer you hold — gentle at first for nudging a line or
 two, accelerating to a fast travel speed. Volume is continuous, roughly 85° of
@@ -56,6 +57,7 @@ and no frames are read.
 | `overlay` | show the always-on-top preview |
 | `base_rate` / `max_rate` / `ramp` | scroll speed and acceleration |
 | `volume` / `volume_per_degree` | volume dial, and its sensitivity |
+| `mute` | one-finger mute toggle |
 | `hotkey` | e.g. `ctrl+alt+G`, `ctrl+shift+F9`, `alt+HOME` |
 
 ## How it works
@@ -70,6 +72,9 @@ hand size. Measured against 359 enrolled frames spanning a 3.6× size range and
 −51° to +66° of hand tilt, this rule classified every frame correctly, and beat
 three alternatives (PIP joint angle, tip-to-MCP distance, straightness ratio) —
 the nearest had a separation of d=2.3 versus d=8.8.
+
+Mute is edge-triggered: it fires once per gesture and re-arms only after
+the hand has clearly let go, so a long hold cannot flip it repeatedly.
 
 Volume goes through Core Audio as a continuous scalar rather than
 `VK_VOLUME_UP` key presses, which move in fixed 2% steps and would make a
