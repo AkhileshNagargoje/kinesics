@@ -156,21 +156,29 @@ class VolumeDial:
 # mute
 # --------------------------------------------------------------------------
 
-# One finger up - the "shush" gesture. It is the only shape left that cannot be
-# confused with the others: palm is all four extended, fist is all four curled,
-# and the volume dial needs exactly two. One sits between them all.
-MUTE_EXT = 0.20         # index clearly extended
-MUTE_CURL = 0.02        # the other three not extended
-MUTE_HOLD_FRAMES = 12   # ~0.4s, long enough that passing through this shape
-                        # on the way between palm and fist cannot trigger it
+# Index and pinky up, middle and ring down - "horns".
+#
+# One finger up was tried first and fired constantly during ordinary scrolling.
+# Opening and closing a hand passes through it: the index is usually the first
+# to extend and the last to curl, so it sits alone for well over the 0.4s hold
+# the toggle required. A longer hold was not the answer.
+#
+# Horns cannot occur in transit at all. A hand opening or closing moves its
+# fingers roughly together, so the middle and ring are never curled while the
+# index and pinky - on either side of them - are both extended. The pose
+# requires non-adjacent fingers in opposite states, which only a deliberate
+# hand shape produces.
+MUTE_EXT = 0.20         # index and pinky clearly extended
+MUTE_CURL = 0.02        # middle and ring not extended
+MUTE_HOLD_FRAMES = 8    # shorter is fine now the pose is unreachable by accident
 MUTE_REARM_FRAMES = 8   # pose must be dropped this long before it can fire again
 
 
 def mute_pose(pts):
-    """True when only the index finger is extended."""
+    """True for the horns shape: index and pinky up, middle and ring down."""
     m = margins(pts)
-    return (m["index"] > MUTE_EXT
-            and all(m[f] < MUTE_CURL for f in ("middle", "ring", "pinky")))
+    return (m["index"] > MUTE_EXT and m["pinky"] > MUTE_EXT
+            and m["middle"] < MUTE_CURL and m["ring"] < MUTE_CURL)
 
 
 class MuteToggle:

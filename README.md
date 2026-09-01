@@ -15,7 +15,7 @@ Runs in the background from a tray icon with a small always-on-top preview.
 | Open palm | scroll up |
 | Fist | scroll down |
 | Two fingers up, rotate your hand like a dial | volume |
-| One finger up, held ~0.4 s | toggle mute |
+| Horns - index and pinky up, middle and ring down | toggle mute |
 
 Scroll speed ramps the longer you hold — gentle at first for nudging a line or
 two, accelerating to a fast travel speed. Volume is continuous, roughly 85° of
@@ -76,6 +76,13 @@ the nearest had a separation of d=2.3 versus d=8.8.
 Mute is edge-triggered: it fires once per gesture and re-arms only after
 the hand has clearly let go, so a long hold cannot flip it repeatedly.
 
+The mute pose is horns rather than a single raised finger. One finger was
+tried first and fired constantly while scrolling, because a hand opening or
+closing passes through it - the index is usually first to extend and last to
+curl, so it sits alone longer than any reasonable hold threshold. Horns
+requires non-adjacent fingers in opposite states, which a hand in transit
+between palm and fist never produces.
+
 Volume goes through Core Audio as a continuous scalar rather than
 `VK_VOLUME_UP` key presses, which move in fixed 2% steps and would make a
 smooth rotation feel like a ratchet.
@@ -94,7 +101,7 @@ Each of these changed the design:
   engage, loose to stay engaged — took median hold from 0.37 s to 1.93 s.
 - **2D finger extension breaks under rotation.** Rotating the hand
   foreshortens extended fingers so they read as curled, which made the volume
-  gesture briefly impersonate a thumbs pose. Hence palm/fist, which are
+  gesture briefly impersonate the old thumbs pose. Hence palm/fist, which are
   opposite extremes of one measurement with no direction to misread, plus a
   lockout while the dial is engaged.
 - **Finger spread is too noisy to build on** — 2.4σ separation, σ=0.26.
@@ -104,9 +111,8 @@ Each of these changed the design:
 | File | |
 |---|---|
 | `gesture_scroll.py` | the daemon: tray icon, hotkeys, overlay, scroll targeting |
-| `palm_fist_scroll.py` | the scroll gesture |
+| `palm_fist_scroll.py` | the scroll gesture, its speed ramp and hysteresis |
 | `volume.py` | the volume dial |
-| `phase3_thumb_scroll.py` | earlier thumb-up/down scrolling, and the shared ramp logic |
 | `phase1_landmark_view.py` | camera thread, landmarker setup, diagnostic viewer |
 | `phase2_pose_detect.py` | the pose gate and its hysteresis |
 | `enroll.py` | guided enrollment — walks you through hand variations, records them |

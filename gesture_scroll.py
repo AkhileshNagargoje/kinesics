@@ -17,7 +17,7 @@ Gestures:
     open palm                                     scroll up
     fist                                          scroll down
     two fingers up, rotate your hand like a dial  volume
-    one finger up, held                           toggle mute
+    horns (index + pinky up, middle + ring down)  toggle mute
 
 Scrolling goes to the window under the mouse cursor, or to the focused window
 if "target" is set to "foreground" in settings.json.
@@ -419,7 +419,7 @@ class Engine:
         if self.settings.get('mute', True):
             from volume import MuteToggle
             muter = MuteToggle()
-            self.log('mute on: hold one finger up to toggle')
+            self.log('mute on: hold horns (index + pinky up) to toggle')
         last_stamp, idx = 0.0, 0
 
         # A small always-on-top preview. Without it the daemon is a black box:
