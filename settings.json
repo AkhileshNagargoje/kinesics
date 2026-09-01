@@ -1,0 +1,11 @@
+{
+  "target": "foreground",
+  "armed_on_start": true,
+  "overlay": true,
+  "base_rate": 260,
+  "max_rate": 1400,
+  "ramp": true,
+  "volume": true,
+  "volume_per_degree": 0.006,
+  "hotkey": "ctrl+alt+G"
+}

@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+
+# downloaded on first run (7.8 MB)
+models/
+
+# personal / machine-specific output
+logs/
+recordings/
+measurements/
