@@ -83,6 +83,11 @@ an independent axis that cannot be passed through by accident. Release
 within ~0.4 s and it sends Page Up/Down as a real key press, which follows
 keyboard focus and so needs no window targeting at all.
 
+A tap also has to be approached cleanly - nothing else engaged in the
+preceding 0.6 s. A hand being lowered sweeps through palm and fist on the
+way down, and without that rule simply putting your hand down fires a page
+jump.
+
 Mute is edge-triggered: it fires once per gesture and re-arms only after
 the hand has clearly let go, so a long hold cannot flip it repeatedly.
 

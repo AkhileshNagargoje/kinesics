@@ -60,6 +60,13 @@ RAMP_TIME = 1.6         # seconds to reach full speed
 TAP_WINDOW = 0.30
 ONSET_DELAY = TAP_WINDOW
 
+# A tap also has to be APPROACHED cleanly. A hand being lowered, or changing
+# from one pose to another, passes briefly through palm and fist on the way -
+# logged in real use as page jumps fired by simply putting the hand down.
+# That brief pose used to emit a negligible scroll; as a page jump it is
+# disruptive. So a tap counts only if nothing else was engaged just before it.
+TAP_GAP = 0.60
+
 
 def palm_fist_state(pts):
     """+1 open palm (scroll up), -1 fist (scroll down), 0 otherwise.
@@ -97,6 +104,7 @@ class PalmFistScroller:
         self.reach = 0.0
         self.taps = 0
         self.last_seen = 0.0
+        self.last_release = -1e9
         self.on_tap = None      # called with +1 (page up) or -1 (page down)
 
     def rate(self, now):
@@ -133,10 +141,13 @@ class PalmFistScroller:
             # would add the whole release-confirmation window to every
             # duration; subtracting a fixed allowance instead over-corrects
             # when the hand really was held.
-            if self.last_seen - self.held_since < TAP_WINDOW:
+            brief = self.last_seen - self.held_since < TAP_WINDOW
+            clean = self.held_since - self.last_release > TAP_GAP
+            if brief and clean:
                 self.taps += 1
                 if self.on_tap:
                     self.on_tap(self.direction)
+            self.last_release = self.last_seen
             self.direction = 0
 
         emitted = 0.0
