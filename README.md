@@ -12,8 +12,10 @@ Runs in the background from a tray icon with a small always-on-top preview.
 
 | Gesture | Action |
 |---|---|
-| Open palm | scroll up |
-| Fist | scroll down |
+| Open palm, held | scroll up |
+| Fist, held | scroll down |
+| Open palm, tapped | page up |
+| Fist, tapped | page down |
 | Two fingers up, rotate your hand like a dial | volume |
 | Horns - index and pinky up, middle and ring down | toggle mute |
 
@@ -57,7 +59,8 @@ and no frames are read.
 | `overlay` | show the always-on-top preview |
 | `base_rate` / `max_rate` / `ramp` | scroll speed and acceleration |
 | `volume` / `volume_per_degree` | volume dial, and its sensitivity |
-| `mute` | one-finger mute toggle |
+| `mute` | horns mute toggle |
+| `tap_to_page` | a brief palm/fist pages instead of scrolling |
 | `hotkey` | e.g. `ctrl+alt+G`, `ctrl+shift+F9`, `alt+HOME` |
 
 ## How it works
@@ -72,6 +75,13 @@ hand size. Measured against 359 enrolled frames spanning a 3.6× size range and
 −51° to +66° of hand tilt, this rule classified every frame correctly, and beat
 three alternatives (PIP joint angle, tip-to-MCP distance, straightness ratio) —
 the nearest had a separation of d=2.3 versus d=8.8.
+
+Paging uses duration rather than another hand shape. The finger-count space
+is full, and a hand moving between any two shapes sweeps through the ones
+between - the cause of every gesture collision in this project. Duration is
+an independent axis that cannot be passed through by accident. Release
+within ~0.4 s and it sends Page Up/Down as a real key press, which follows
+keyboard focus and so needs no window targeting at all.
 
 Mute is edge-triggered: it fires once per gesture and re-arms only after
 the hand has clearly let go, so a long hold cannot flip it repeatedly.

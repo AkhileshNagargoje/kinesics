@@ -14,8 +14,8 @@ Hotkeys (work from any application):
     ctrl+alt+Q   quit
 
 Gestures:
-    open palm                                     scroll up
-    fist                                          scroll down
+    open palm held / fist held                    scroll up / down
+    open palm tapped / fist tapped                page up / page down
     two fingers up, rotate your hand like a dial  volume
     horns (index + pinky up, middle + ring down)  toggle mute
 
@@ -223,6 +223,24 @@ class ForegroundWheel:
         user32.PostMessageW(target, WM_MOUSEWHEEL, wparam, lparam)
 
 
+VK_PRIOR = 0x21          # Page Up
+VK_NEXT = 0x22           # Page Down
+KEYEVENTF_KEYUP = 0x0002
+
+
+def send_page(direction):
+    """Page Up / Page Down as a real key press.
+
+    Keys follow keyboard focus rather than the mouse pointer, so unlike the
+    wheel path this always lands in the window the user is actually working in,
+    with no targeting logic needed.
+    """
+    vk = VK_PRIOR if direction > 0 else VK_NEXT
+    user32 = ctypes.windll.user32
+    user32.keybd_event(vk, 0, 0, 0)
+    user32.keybd_event(vk, 0, KEYEVENTF_KEYUP, 0)
+
+
 def window_title(hwnd):
     user32 = ctypes.windll.user32
     buf = ctypes.create_unicode_buffer(120)
@@ -405,6 +423,13 @@ class Engine:
         sc.ramp = bool(self.settings['ramp'])
         sc.wheel = make_wheel(self.settings, self.log)
 
+        if self.settings.get('tap_to_page', True):
+            def tapped(direction):
+                send_page(direction)
+                self.log(f"TAP -> page {'up' if direction > 0 else 'down'}")
+            sc.on_tap = tapped
+            self.log('tap a palm or fist to page up/down; hold to scroll')
+
         # Volume wins while it is engaged, and for a moment after. A rotating
         # hand transiently reads as a fist (foreshortened fingers look
         # curled), so without a lockout every volume gesture ends in a
@@ -578,7 +603,8 @@ DEFAULTS = {
     "overlay": True,
     "target": "cursor",   # "cursor" or "foreground"
     "volume": True,       # two fingers up, rotate like a dial
-    "mute": True,         # one finger up, held, toggles mute
+    "mute": True,         # horns, held, toggles mute
+    "tap_to_page": True,  # a brief palm/fist pages instead of scrolling
     "volume_per_degree": 0.006,
 }
 

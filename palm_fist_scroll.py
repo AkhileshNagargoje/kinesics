@@ -46,7 +46,19 @@ FIST_CURL = -0.10       # all four clearly curled
 BASE_RATE = 260.0       # wheel units/sec at the start of a hold
 MAX_RATE = 1400.0       # after ramping up
 RAMP_TIME = 1.6         # seconds to reach full speed
-ONSET_DELAY = 0.12      # ignore the first moment, while the pose settles
+
+# Tap versus hold, rather than another hand shape.
+#
+# The finger-count space is full - palm, fist, two fingers and horns already
+# sit in it, and a hand moving between any two sweeps through the shapes in
+# between, which is what caused every collision so far. Duration is an
+# independent axis: it cannot be passed through by accident.
+#
+# Release inside this window and it pages instead of scrolling. The cost is
+# that smooth scrolling cannot begin until the window has elapsed, since until
+# then the gesture might still turn out to be a tap.
+TAP_WINDOW = 0.30
+ONSET_DELAY = TAP_WINDOW
 
 
 def palm_fist_state(pts):
@@ -83,6 +95,9 @@ class PalmFistScroller:
         self.total = 0.0
         self.holds = 0
         self.reach = 0.0
+        self.taps = 0
+        self.last_seen = 0.0
+        self.on_tap = None      # called with +1 (page up) or -1 (page down)
 
     def rate(self, now):
         held = now - self.held_since - ONSET_DELAY
@@ -104,6 +119,7 @@ class PalmFistScroller:
             self.true_run += 1
             self.false_run = 0
             self.candidate = d
+            self.last_seen = now
         else:
             self.false_run += 1
             self.true_run = 0
@@ -113,10 +129,22 @@ class PalmFistScroller:
             self.held_since = now
             self.holds += 1
         elif self.direction != 0 and self.false_run >= FRAMES_TO_RELEASE:
+            # Measure to when the pose was last actually seen. Using `now`
+            # would add the whole release-confirmation window to every
+            # duration; subtracting a fixed allowance instead over-corrects
+            # when the hand really was held.
+            if self.last_seen - self.held_since < TAP_WINDOW:
+                self.taps += 1
+                if self.on_tap:
+                    self.on_tap(self.direction)
             self.direction = 0
 
         emitted = 0.0
-        if self.direction:
+        # Only while the pose is actually visible. The release hysteresis keeps
+        # `direction` alive through a dropped frame so the gesture is not cut
+        # short, but scrolling on during those frames would also mean a tap
+        # emits scroll while its release is still being confirmed.
+        if self.direction and self.false_run == 0:
             # Image y grows downward, but this is a pose not a movement: an
             # open palm means up, which is a POSITIVE wheel delta.
             emitted = self.direction * self.rate(now) * dt
