@@ -28,7 +28,7 @@ from trace_pose import margins
 
 # Rotating the hand foreshortens the extended fingers, so the pose test
 # briefly fails mid-gesture. A short release window turns that into a
-# dropped dial - and worse, the same frames look like a thumbs pose.
+# dropped dial - and worse, the same frames look like a fist.
 FRAMES_TO_RELEASE = 22
 DEADZONE_DEG = 0.6          # below this it is landmark noise, not intent
 VOL_PER_DEGREE = 0.006      # ~85 degrees of rotation covers half the range

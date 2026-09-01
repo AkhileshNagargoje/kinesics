@@ -314,7 +314,7 @@ def draw_overlay(frame, sc, state, dial=None, muter=None):
     elif state is None:
         label, color = "no hand seen", (120, 120, 130)
     else:
-        label, color = "hand seen - show a thumb", (0, 190, 240)
+        label, color = "hand seen - palm / fist / horns", (0, 190, 240)
 
     cv2.rectangle(view, (0, 0), (w, 26), (0, 0, 0), -1)
     cv2.putText(view, label, (8, 19), cv2.FONT_HERSHEY_SIMPLEX, 0.52, color, 1, cv2.LINE_AA)
@@ -402,9 +402,9 @@ class Engine:
         sc.wheel = make_wheel(self.settings, self.log)
 
         # Volume wins while it is engaged, and for a moment after. A rotating
-        # hand transiently reads as thumbs-up (foreshortened fingers look
+        # hand transiently reads as a fist (foreshortened fingers look
         # curled), so without a lockout every volume gesture ends in a
-        # spurious scroll.
+        # spurious scroll down.
         volume_until = 0.0
         VOLUME_COOLDOWN = 1.2
 
@@ -628,11 +628,11 @@ def main():
     if "--disarmed" in sys.argv:
         settings["armed_on_start"] = False
     if not claim_single_instance():
-        msg = "gesture-scroll is already running (check the tray icon)"
+        msg = "kinesics is already running (check the tray icon)"
         if console:
             print(msg)
         else:
-            ctypes.windll.user32.MessageBoxW(None, msg, "Gesture scroll", 0x40)
+            ctypes.windll.user32.MessageBoxW(None, msg, "kinesics", 0x40)
         return
     log_file = Path(__file__).parent / "logs" / "daemon.log"
     log_file.parent.mkdir(exist_ok=True)
@@ -647,15 +647,15 @@ def main():
     import pystray
 
     engine = Engine(log, settings)
-    icon = pystray.Icon("gesture-scroll", make_icon("off"), "Gesture scroll (disarmed)")
+    icon = pystray.Icon("kinesics", make_icon("off"), "kinesics (disarmed)")
 
     def refresh(state):
         icon.icon = make_icon(state)
         icon.title = {
-            "off": "Gesture scroll - disarmed",
-            "armed": "Gesture scroll - armed, show a thumb",
-            "up": "Gesture scroll - scrolling up",
-            "down": "Gesture scroll - scrolling down",
+            "off": "kinesics - disarmed",
+            "armed": "kinesics - armed: palm up, fist down, rotate two fingers for volume",
+            "up": "kinesics - scrolling up",
+            "down": "kinesics - scrolling down",
         }[state]
 
     engine.on_state = refresh
