@@ -411,6 +411,10 @@ class Engine:
         # spurious scroll down.
         volume_until = 0.0
         VOLUME_COOLDOWN = 1.2
+        # And the mirror of it: a hand that just finished scrolling is on its
+        # way through the two-finger shape, not asking for the dial.
+        scroll_until = 0.0
+        SCROLL_COOLDOWN = 0.7
 
         dial = None
         if self.settings.get('volume', True):
@@ -463,9 +467,13 @@ class Engine:
                 if hasattr(sc.wheel, "note_foreground"):
                     sc.wheel.note_foreground()
 
+                if sc.direction:
+                    scroll_until = time.perf_counter() + SCROLL_COOLDOWN
+
                 if dial is not None:
                     was = dial.engaged
-                    dial.update(st)
+                    dial.update(None if time.perf_counter() < scroll_until
+                                and not dial.engaged else st)
                     if dial.engaged:
                         volume_until = time.perf_counter() + VOLUME_COOLDOWN
                     if dial.engaged and not was:

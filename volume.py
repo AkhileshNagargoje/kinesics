@@ -23,13 +23,23 @@ Rotate clockwise to raise, anticlockwise to lower.
 
 import numpy as np
 
-from phase2_pose_detect import FRAMES_TO_ENGAGE, MIN_HAND_SIZE_PX, pose_ok
+from phase2_pose_detect import MIN_HAND_SIZE_PX, pose_ok
 from trace_pose import margins
 
 # Rotating the hand foreshortens the extended fingers, so the pose test
 # briefly fails mid-gesture. A short release window turns that into a
 # dropped dial - and worse, the same frames look like a fist.
 FRAMES_TO_RELEASE = 22
+
+# A hand closing curls its fingers from the pinky inward, so it passes
+# straight through the two-finger pose on every palm-to-fist transition.
+# Logged in real use: five volume engagements, each one immediately after a
+# scroll pose, walking the volume from 40% to 99% unbidden.
+#
+# Unlike the mute pose there is no non-transitional shape to switch to that
+# still affords rotation, so the dial instead has to be asked for
+# deliberately: hold it long enough that a hand in transit cannot qualify.
+FRAMES_TO_ENGAGE = 14
 DEADZONE_DEG = 0.6          # below this it is landmark noise, not intent
 VOL_PER_DEGREE = 0.006      # ~85 degrees of rotation covers half the range
 ONSET_FRAMES = 3            # ignore rotation while the pose settles
